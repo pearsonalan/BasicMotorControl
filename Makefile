@@ -1,8 +1,18 @@
+ARCH=$(shell uname)
+
 PROG=BasicMotorControl
+
 PORT=/dev/ttyUSB0
 BAUD=115200
 
-ARDUINO_HOME=/usr/local/arduino-1.6.4
+ifeq ($(ARCH),Darwin)
+  ARDUINO_HOME=/Applications/Arduino.app/Contents/Java
+else ifeq ($(ARCH), Linux)
+  ARDUINO_HOME=/usr/local/arduino-1.6.4
+else
+  $(error unsupported architecture)
+endif
+
 ARDUINO_TOOLS=$(ARDUINO_HOME)/hardware/tools
 
 CPP=$(ARDUINO_TOOLS)/avr/bin/avr-g++
@@ -20,7 +30,7 @@ ARDUINO_SRC=$(ARDUINO_HOME)/hardware/arduino/avr/cores/arduino
 
 CORE_OBJS= \
 	wiring.o wiring_analog.o wiring_shift.o wiring_pulse.o wiring_digital.o \
-	abi.o hooks.o new.o Stream.o HID.o Print.o CDC.o IPAddress.o USBCore.o Tone.o \
+	abi.o hooks.o new.o Stream.o Print.o CDC.o IPAddress.o USBCore.o Tone.o \
 	WInterrupts.o WMath.o WString.o \
 	HardwareSerial.o HardwareSerial0.o HardwareSerial1.o HardwareSerial2.o HardwareSerial3.o \
 	main.o
