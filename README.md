@@ -13,3 +13,8 @@ using an ATmega328p chip.
 make
 make upload
 ```
+
+## Simulation
+
+The sim directory contains a simulator based on the simavr project to simulate
+a board that can run the BasicMotorControl program.
