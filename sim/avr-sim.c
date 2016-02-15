@@ -18,13 +18,22 @@ void pin_changed_hook(struct avr_irq_t * irq, uint32_t value, void * param)
 	printf("Pin change: %s => %d\n", irq->name, value);
 }
 
-void
-sig_int(int sign)
+void sig_int(int sign)
 {
 	printf("signal caught, simavr terminating\n");
 	if (avr)
 		avr_terminate(avr);
 	exit(0);
+}
+
+void show_ports(avr_t *avr)
+{
+	avr_io_t * port = avr->io_port;
+	while (port)
+	{
+		printf("%s %s %08x %d\n", port->kind, port->irq_names ? *port->irq_names : NULL, port->irq_ioctl_get, port->irq_count);
+		port = port->next;
+	}
 }
 
 int main(int argc, char *argv[])
@@ -60,69 +69,29 @@ int main(int argc, char *argv[])
 	avr_gdb_init(avr);
 #endif
 
-	/*
-	 *	VCD file initialization
-	 *	
-	 *	This will allow you to create a "wave" file and display it in gtkwave
-	 *	Pressing "r" and "s" during the demo will start and stop recording
-	 *	the pin changes
-	 */
+	/* VCD file initialization */
 	avr_vcd_init(avr, "wave.vcd", &vcd_file, 10000 /* usec */);
-
-	avr_vcd_add_signal(&vcd_file, 
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 0),
-		1,
-		"B0" );
-
-	avr_vcd_add_signal(&vcd_file, 
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 1),
-		1,
-		"B1" );
-
-	avr_vcd_add_signal(&vcd_file, 
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 2),
-		1,
-		"B2" );
-
-	avr_vcd_add_signal(&vcd_file, 
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 3),
-		1,
-		"B3" );
-
-
-	avr_irq_register_notify(
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 0),
-		pin_changed_hook, 
-		NULL);
-
-	avr_irq_register_notify(
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 1),
-		pin_changed_hook, 
-		NULL);
-
-	avr_irq_register_notify(
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 2),
-		pin_changed_hook, 
-		NULL);
-
-	avr_irq_register_notify(
-		avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 3),
-		pin_changed_hook, 
-		NULL);
-
-	{
-		avr_io_t * port = avr->io_port;
-		while (port)
-		{
-			printf("%s %s %08x %d\n", port->kind, port->irq_names ? *port->irq_names : NULL, port->irq_ioctl_get, port->irq_count);
-			port = port->next;
-		}
-	}
+	avr_vcd_add_signal(&vcd_file, avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 0), 1, "B0" ); 
+	avr_vcd_add_signal(&vcd_file, avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 1), 1, "B1" ); 
+	avr_vcd_add_signal(&vcd_file, avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 2), 1, "B2" ); 
+	avr_vcd_add_signal(&vcd_file, avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 3), 1, "B3" ); 
 	avr_vcd_start(&vcd_file);
 
+	/* IRQ callback hooks */
+	avr_irq_register_notify( avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 0), pin_changed_hook, NULL); 
+	avr_irq_register_notify( avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 1), pin_changed_hook, NULL); 
+	avr_irq_register_notify( avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 2), pin_changed_hook, NULL); 
+	avr_irq_register_notify( avr_io_getirq(avr, AVR_IOCTL_IOPORT_GETIRQ('B'), 3), pin_changed_hook, NULL); 
+
+	/* show some info */
+	show_ports(avr);
+
+	/* install signal handlers */
 	signal(SIGINT, sig_int);
 	signal(SIGTERM, sig_int);
 
+	/* main loop */
+	printf("*** Entering main loop ***\n");
 	while (1) 
 	{
 		state = avr_run(avr);
